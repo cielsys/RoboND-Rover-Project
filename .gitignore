@@ -1,0 +1,6 @@
+.git
+.ipynb_checkpoints
+*.bak
+__pycache__
+
+junk

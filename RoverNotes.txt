@@ -1,0 +1,51 @@
+======= DevEnvNotes ==============
+A) Enable python env
+source activate RoboND #Linux
+activate RoboND #Win
+
+B) Run Rover program
+python RoverMain.py # from shell
+exec(open("RoverMain.py").read()) # from interpreter
+exec(open("./RoverMain.py").read(), globals())
+Start simulator, select Autonomous # Must happen after RoverMain start
+
+Killing the program in windows
+Ctrl-Break will effectively break the async stuff and end the python session
+Ctrl-c enter repeat will sometimes work
+
+======= RoverSim Notes ==============
+---Keyboard shortcuts
+F1 Reset scene: Reset Manual/Autonomous mode
+F12 Quit
+wasd Steering
+Tab Toggle cam view
+r Toggle recording
+g toggle grid display
+c Toggle Rover POV inset
+
+---Mouse shortcuts
+MouseMove Steering
+MouseScroll Zoom
+MouseButMid Reset zoom
+MouseButRight+Mouse Pan/Tilt
+MouseButLeft Pickup nugget
+
+
+---Rover Behaviour:
+V max ~=5m/s
+A = 1m/s/s (only throttle position)
+Brake power is much stronger than throttle
+-A ~=2.5m/s
+Slope affects speed
+Drag appears to be proportional to V**2
+Turning increases drag alot
+Steering is active at 0V
+
+Environment:
+Tracks disappear after a minute or so
+Some bajadas are very sand colored
+IsNear is a basketball foul box shape about 1m long and outer wheel edge wide
+You can get high sided on gold
+
+AverageNavVector
+SelectedHeading
