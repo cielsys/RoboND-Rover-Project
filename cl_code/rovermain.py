@@ -51,8 +51,8 @@ class RoverState():
         self.steer = 0 # Current steering angle
         self.throttle = 0 # Current throttle value
         self.brake = 0 # Current brake value
-        self.nav_angles = [] # Angles of navigable terrain pixels
-        self.nav_dists = [] # Distances of navigable terrain pixels
+        #self.nav_angles = [] # Angles of navigable terrain pixels
+        #self.nav_dists = [] # Distances of navigable terrain pixels
         self.ground_truth = ground_truth_3d # Ground truth worldmap
         self.mode = 'forward' # Current mode (can be forward or stop)
         self.throttle_set = 0.2 # Throttle setting when accelerating
@@ -84,25 +84,22 @@ class RoverState():
         self.homePos = None # Location of mission start
         self.isNugVisible = False
         self.nugDistance = 0
-        self.nugAngle = 0
+        self.nugBearingDeg = 0
         self.procImage = {}
 
         # Todo: fix this... New class?
         self.navFields = {}
-        self.navFields['Full'] = types.SimpleNamespace()
-        self.navFields['RightHalf'] = types.SimpleNamespace()
-        self.navFields['LeftHalf'] = types.SimpleNamespace()
-        self.navFields['MiddleHalf'] = types.SimpleNamespace()
+        CreateNavField(self.navFields, 'Full', 1, -0.5) # Empirical heading gain/bias
+        CreateNavField(self.navFields, 'RightHalf', 0.5, 1.5)
+        CreateNavField(self.navFields, 'LeftHalf', 1, 0)
+        CreateNavField(self.navFields, 'MiddleHalf', 1, 0)
 
-        navField = self.navFields['Full']
-        navField.isNavigable = False
-        self.navFields['RightHalf']
-        navField.isNavigable = False
-        self.navFields['LeftHalf']
-        navField.isNavigable = False
-        self.navFields['MiddleHalf']
-        navField.isNavigable = False
-
+def CreateNavField(dictNavFields, navFieldName, steeringGain, steeringBiasDeg):
+    navField = types.SimpleNamespace()
+    dictNavFields[navFieldName] = navField
+    navField.isNavigable = False
+    navField.steeringBiasDeg = steeringBiasDeg
+    navField.steeringGain = steeringGain
 
 # Initialize our rover
 Rover = RoverState()

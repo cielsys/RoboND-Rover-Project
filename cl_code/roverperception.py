@@ -63,19 +63,17 @@ def perception_step(Rover):
         Rover.worldmap[navigable_y_world, navigable_x_world, 2] += 1
 
     # 8) Convert rover-centric pixel positions to polar coordinates
-    navDistances, navAngles = to_polar_coords(x_pixel=navigable_xpix, y_pixel=navigable_ypix)
-
-    # Update Rover pixel distances and angles
-    Rover.nav_dists = navDistances
-    Rover.nav_angles = navAngles
+    #navDistances, navAngles = to_polar_coords(x_pixel=navigable_xpix, y_pixel=navigable_ypix)
     
     AnalyzeNavFields(Rover, procImage['Map_POVThreshNav'])
 
     # Analyze rock nuggets 
-    Rover.isNugVisible = (len(rocks_x_world) > 10)
+    Rover.isNugVisible = (len(rocks_xpix) > 5)
     if (Rover.isNugVisible):
-        nugDistances, nugAngles = to_polar_coords(x_pixel=rocks_xpix, y_pixel=rocks_ypix)
-        Rover.nugDistance, Rover.nugAngle = np.mean(nugDistances), np.mean(nugAngles)
+        nugDistances, nugAnglesRad = to_polar_coords(x_pixel=rocks_xpix, y_pixel=rocks_ypix)
+        Rover.nugDistance, Rover.nugBearingDeg = np.min(nugDistances), np.mean(nugAnglesRad)*180/np.pi
+    else:
+        Rover.nugDistance, Rover.nugBearingDeg = 0,0
 
     return Rover
 
@@ -86,7 +84,8 @@ def AnalyzeNavFields(Rover, imgFull):
     AnalyzeNavField(Rover, 'MiddleHalf', imgFull)
 
 def AnalyzeNavField(Rover, fieldName, imgFull):
-    minNavigableFieldSize = 100
+    minNavigableFieldSize = 50
+
     imgNavField = np.copy(imgFull) # Copy the full nav field binary image
     mask0 = GetMask(fieldName)
     imgNavField[mask0] = 0 # Zero out the pixels using the mask
@@ -96,15 +95,19 @@ def AnalyzeNavField(Rover, fieldName, imgFull):
     navField.navPixX = navPixX
     navField.navPixY = navPixY    
 
-    navField.isNavigable = (len(navField.navPixX) > minNavigableFieldSize)
-    if navField.isNavigable:
+    fieldSize = (len(navField.navPixX)) 
+    if fieldSize > 2:
         navField.meanX = np.mean(navField.navPixX)
         navField.meanY = np.mean(navField.navPixY)
+        navField.meanLen = np.sqrt(np.square(navField.meanX) + np.square(navField.meanY))
+        navField.meanDirRad = np.arctan2(navField.meanY, navField.meanX)
+        navField.meanDirDeg = navField.meanDirRad * 180/np.pi
     else:
         navField.meanX = 0
         navField.meanY = 0
+        navField.meanLen = 0
+        navField.meanDirRad = 0
+        navField.meanDirDeg = 0
     
-    navField.meanLen = np.sqrt(np.square(navField.meanX) + np.square(navField.meanY))
-    navField.meanDirRad = np.arctan2(navField.meanY, navField.meanX)
-    navField.meanDirDeg = navField.meanDirRad * 180/np.pi
+    navField.isNavigable = (fieldSize > minNavigableFieldSize) and (navField.meanLen > 2)
     return

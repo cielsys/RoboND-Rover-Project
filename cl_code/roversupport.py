@@ -8,11 +8,9 @@ from io import BytesIO, StringIO
 import base64
 import time
 import types
-import pprint
 
+from utils import convert_to_float, Log, Clip
 from roverdecision import SelectBestNavField
-
-pp = pprint.PrettyPrinter(indent=4)
 
 # Define pixels RGB thresholds for navigable, obstacle and nugget pixels
 threshRGB_Nav =      [1, (160, 160, 160)]
@@ -28,20 +26,6 @@ colors.yellow = (255, 255, 0)
 colors.cyan = (255, 255, 0)
 colors.magenta = (255, 0, 255)
 colors.white = (255, 0, 255)
-
-# Define a function to convert telemetry strings to float independent of decimal convention
-def convert_to_float(string_to_convert):
-    if ',' in string_to_convert:
-        float_value = np.float(string_to_convert.replace(',', '.'))
-    else:
-        float_value = np.float(string_to_convert)
-    return float_value
-
-def Clip(x, lo, hi):
-    return max(lo, min(hi, x))
-
-def Log(strOut):
-    pp.pprint(strOut)
 
 def update_rover(Rover, data):
     # Retrieve current kinematic and control values
@@ -80,6 +64,7 @@ def update_rover(Rover, data):
     imgString = data["image"]
     image = Image.open(BytesIO(base64.b64decode(imgString)))
     Rover.img = np.asarray(image)
+
     # Create dict conta8iner for various processed images
     Rover.procImage = {}
     Rover.procImage['POVRaw'] = Rover.img
@@ -195,7 +180,6 @@ def create_output_images(Rover):
 
     # Draw nav arrow
     navFieldName, navField = SelectBestNavField(Rover)
-    navField = Rover.navFields['Full']
 
     if navField.isNavigable:
         arrowRightX = 160 - navField.meanY # Convert from rover to Img CS
@@ -212,9 +196,10 @@ def create_output_images(Rover):
 
 #===================================================
 # Oy, this is roundabout...
-def createMasks(imgTemplate):
+def CreateMasks(imgTemplate):
     """ Create zeroing mask,
     ie all 1 valued mask pixels will zero out the corresponding image pixel
+    This masks are in warped image CS, so the camera location is r160 c160 
     """
     mask0s = {}
     maskArr = np.zeros_like(imgTemplate, dtype=bool)
@@ -226,22 +211,22 @@ def createMasks(imgTemplate):
 
     # RightHalf
     maskArr.fill(0)
-    maskArr[80:,160:] = 1
+    maskArr[100:,160:] = 1
     mask0s['RightHalf'] = (maskArr == 0)
 
     # LeftHalf
     maskArr.fill(0)
-    maskArr[80:,:159] = 1
+    maskArr[100:,:159] = 1
     mask0s['LeftHalf'] = (maskArr == 0)
 
     # MiddleHalf
     maskArr.fill(0)
-    maskArr[80:,80:240] = 1
+    maskArr[100:,80:240] = 1
     mask0s['MiddleHalf'] = (maskArr == 0)
 
     return mask0s
 
-g_mask0s = createMasks(np.zeros((160,320),dtype=bool))
+g_mask0s = CreateMasks(np.zeros((160,320),dtype=bool))
 
 def GetMask(fieldName):
     return g_mask0s[fieldName]
@@ -385,15 +370,14 @@ def pix_to_world(xpix, ypix, xpos, ypos, yaw, world_size, scale):
     # Return the result
     return x_pix_world, y_pix_world
 
-# Define a function to convert to radial coords in rover space
 def to_polar_coords(x_pixel, y_pixel):
-    # Convert (x_pixel, y_pixel) to (distance, angle)
-    # in polar coordinates in rover space
+    """Convert pixels from RovCS XY to RovCS distance angle in Rads
+    """
     # Calculate distance to each pixel
     dist = np.sqrt(x_pixel**2 + y_pixel**2)
     # Calculate angle away from vertical for each pixel
-    angles = np.arctan2(y_pixel, x_pixel)
-    return dist, angles
+    anglesRad = np.arctan2(y_pixel, x_pixel)
+    return dist, anglesRad
 
 def ShowRandomImage(path):
     """ Expects a folder with image files and a glob name like '../my_dataset/IMG/*'"""
